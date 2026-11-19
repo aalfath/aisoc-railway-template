@@ -8,4 +8,7 @@ ENV ENVIRONMENT=production \
     AISOC_LAKE_WRITER_ENABLED=false \
     PORT=8003
 COPY serve.py /usr/local/lib/aisoc-serve.py
-CMD ["python", "/usr/local/lib/aisoc-serve.py"]
+COPY start.sh /usr/local/bin/aisoc-start
+COPY wait-db.py /usr/local/lib/aisoc-wait-db.py
+RUN chmod 755 /usr/local/bin/aisoc-start
+CMD ["/usr/local/bin/aisoc-start"]

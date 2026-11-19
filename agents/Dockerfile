@@ -12,5 +12,6 @@ ENV ENVIRONMENT=production \
     PLAYBOOK_STORE_DIR=/data/playbooks \
     PORT=8084
 COPY start.sh /usr/local/bin/aisoc-start
+COPY wait-db.py /usr/local/lib/aisoc-wait-db.py
 RUN chmod 755 /usr/local/bin/aisoc-start
 CMD ["/usr/local/bin/aisoc-start"]

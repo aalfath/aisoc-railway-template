@@ -7,6 +7,7 @@ ENV ENVIRONMENT=production \
     AISOC_ALLOW_CLEARTEXT_KAFKA=1 \
     PORT=8003
 COPY start.sh /usr/local/bin/aisoc-start
+COPY wait-db.py /usr/local/lib/aisoc-wait-db.py
 COPY credential-key.sh /usr/local/bin/aisoc-credential-key
 RUN chmod 755 /usr/local/bin/aisoc-start
 CMD ["/usr/local/bin/aisoc-start"]
