@@ -1,0 +1,102 @@
+# Local test of the template: the same images, start scripts and variables the
+# Railway services get (Railway's Postgres and Redis are stood in for by the
+# official images, with Railway's default user and database names).
+x-common: &common
+  ENVIRONMENT: production
+  REDIS_URL: redis://default:${REDIS_PASSWORD}@redis:6379
+  KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+  SECRET_KEY: ${SECRET_KEY}
+  AISOC_SERVICE_TOKEN: ${AISOC_SERVICE_TOKEN}
+  DATABASE_URL: postgresql://aisoc_app:${AISOC_APP_DB_PASSWORD}@postgres:5432/railway
+services:
+  postgres:
+    image: postgres:17
+    environment: {POSTGRES_USER: postgres, POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}", POSTGRES_DB: railway}
+    volumes: [pg:/var/lib/postgresql/data]
+    healthcheck: {test: ["CMD", "pg_isready", "-U", "postgres"], interval: 3s, retries: 30}
+  redis:
+    image: redis:8
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+  redpanda:
+    build: ../redpanda
+    environment: {RAILWAY_PRIVATE_DOMAIN: redpanda, REDPANDA_MEMORY: 1G}
+    volumes: [rp:/var/lib/redpanda/data]
+  api:
+    build: ../api
+    depends_on: {postgres: {condition: service_healthy}}
+    environment:
+      <<: *common
+      DATABASE_MIGRATION_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/railway
+      AISOC_APP_DB_PASSWORD: ${AISOC_APP_DB_PASSWORD}
+      AISOC_ADMIN_EMAIL: admin@example.com
+      AISOC_ADMIN_PASSWORD: ${AISOC_ADMIN_PASSWORD}
+      AISOC_CREDENTIAL_KEY: ${AISOC_CREDENTIAL_KEY}
+      AISOC_REALTIME_JWT_SECRET: ${AISOC_REALTIME_JWT_SECRET}
+      REALTIME_INTERNAL_TOKEN: ${REALTIME_INTERNAL_TOKEN}
+      METRICS_TOKEN: ${METRICS_TOKEN}
+      JWT_SECRET: ${JWT_SECRET}
+      AISOC_ACTIONS_SERVICE_TOKEN: ${AISOC_ACTIONS_SERVICE_TOKEN}
+      AISOC_CONSOLE_URL: http://localhost:3000
+      CONSOLE_PUBLIC_BASE_URL: http://localhost:3000
+      CORS_ORIGINS: http://localhost:3000
+      AGENTS_API_URL: http://agents:8084
+      AGENTS_SERVICE_URL: http://agents:8084
+      REALTIME_BASE_URL: http://realtime:4000
+      FUSION_SERVICE_URL: http://fusion:8003
+      CONNECTORS_SERVICE_URL: http://connectors:8003
+      INGEST_SERVICE_URL: http://ingest:8080
+      AISOC_ACTIONS_BASE_URL: http://actions:8085
+  agents:
+    build: ../agents
+    environment:
+      <<: *common
+      CORE_API_URL: http://api:8000
+      API_SERVICE_URL: http://api:8000
+      AISOC_API_URL: http://api:8000
+      REALTIME_URL: http://realtime:4000
+      REALTIME_INTERNAL_TOKEN: ${REALTIME_INTERNAL_TOKEN}
+      METRICS_TOKEN: ${METRICS_TOKEN}
+      AISOC_ACTIONS_SERVICE_TOKEN: ${AISOC_ACTIONS_SERVICE_TOKEN}
+    volumes: [agents:/data]
+  realtime:
+    build: ../realtime
+    environment:
+      REDIS_URL: redis://default:${REDIS_PASSWORD}@redis:6379
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      AISOC_REALTIME_JWT_SECRET: ${AISOC_REALTIME_JWT_SECRET}
+      REALTIME_INTERNAL_TOKEN: ${REALTIME_INTERNAL_TOKEN}
+      AISOC_CORS_ORIGINS: http://localhost:3000
+  ingest:
+    build: ../ingest
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      REDIS_ADDR: redis:6379
+      DATABASE_DSN: postgres://aisoc_app:${AISOC_APP_DB_PASSWORD}@postgres:5432/railway?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET}
+      AISOC_SERVICE_TOKEN: ${AISOC_SERVICE_TOKEN}
+      METRICS_TOKEN: ${METRICS_TOKEN}
+  fusion:
+    build: ../fusion
+    environment: *common
+  connectors:
+    build: ../connectors
+    environment:
+      <<: *common
+      CORE_API_URL: http://api:8000
+      INGEST_SERVICE_URL: http://ingest:8080
+      AISOC_CREDENTIAL_KEY: ${AISOC_CREDENTIAL_KEY}
+  actions:
+    build: ../actions
+    environment:
+      <<: *common
+      CORE_API_URL: http://api:8000
+      AISOC_ACTIONS_SERVICE_TOKEN: ${AISOC_ACTIONS_SERVICE_TOKEN}
+  web:
+    build: ../web
+    ports: ["3000:3000"]
+    environment:
+      API_URL: http://api:8000
+      AGENTS_URL: http://agents:8084
+      REALTIME_URL: http://realtime:4000
+      FUSION_URL: http://fusion:8003
+volumes: {pg: {}, rp: {}, agents: {}}
