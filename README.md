@@ -1,3 +1,5 @@
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template/aisoc?utm_medium=integration&utm_source=button&utm_campaign=aisoc)
+
 # Deploy and Host AiSOC on Railway
 
 AiSOC is an open-source (MIT), self-hosted AI Security Operations Center. It ingests security telemetry, runs detection rules, fuses related alerts into incidents, triages them with AI agents whose every prompt and tool call is recorded in a replayable decision ledger, and maps findings to MITRE ATT&CK. Analysts work cases in a web console.
