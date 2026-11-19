@@ -7,11 +7,22 @@ set -e
 export AISOC_ADMIN_EMAIL="${AISOC_ADMIN_EMAIL:-admin@aisoc.internal}"
 mkdir -p "${AISOC_PLUGINS_DIR:-/opt/aisoc/plugins}" "${PLUGIN_TRUSTED_KEYS_DIR:-/opt/aisoc/plugin-keys}"
 
+# Upstream's compose names the owner role "aisoc", and one migration
+# (099_bulk_close_backup_schema.sql) hands a schema to that role by name. Railway's
+# Postgres owner is "postgres", so create "aisoc" as a NOLOGIN role first.
+i=0
+until python /usr/local/lib/aisoc-owner-role.py; do
+  i=$((i+1))
+  if [ "$i" -ge 30 ]; then echo "[aisoc] database not reachable after 30 tries, giving up" >&2; exit 1; fi
+  echo "[aisoc] database not reachable yet, retry $i/30 in 5 s" >&2
+  sleep 5
+done
+
 i=0
 until python -m app.scripts.run_migrations; do
   i=$((i+1))
-  if [ "$i" -ge 30 ]; then echo "[aisoc] migrations failed 30 times, giving up" >&2; exit 1; fi
-  echo "[aisoc] migrations not applied yet (database starting?), retry $i/30 in 5 s" >&2
+  if [ "$i" -ge 10 ]; then echo "[aisoc] migrations failed 10 times, giving up" >&2; exit 1; fi
+  echo "[aisoc] migration run failed, retry $i/10 in 5 s" >&2
   sleep 5
 done
 

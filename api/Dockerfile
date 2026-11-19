@@ -11,5 +11,6 @@ ENV ENVIRONMENT=production \
     PORT=8000
 COPY start.sh /usr/local/bin/aisoc-start
 COPY credential-key.sh /usr/local/bin/aisoc-credential-key
+COPY owner-role.py /usr/local/lib/aisoc-owner-role.py
 RUN chmod 755 /usr/local/bin/aisoc-start
 CMD ["/usr/local/bin/aisoc-start"]
